@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil monitoring system</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!--Section1-->
+    <section class="img1">
+        <div class="text">
+            <span class="textBg">Soil monitoring system</span>
+        </div>
+    </section>
+    <section class="section1 section-light">
+        <h2>
+            Soil Monitoring System
+        </h2>
+        <p>
+            <div class="dial">
+                <div class="needle" id="needle"></div>
+                <div class="SoilMoisture" id ="SoilMoisture">0%</div>
+                <button class="fetch-button" onclick="GetData()">Refresh</button>
+              </div>
+        </p>
+    </section>
+
+    <!--SEction 2-->
+    <section class="img2">
+        <div class="text">
+            <span class="textBg">Soil control system</span>
+        </div>
+    </section>
+    <section class="section2 section-dark">
+        <h2 >Watering Settings</h2>
+        <p>
+            <div class="middle">
+                
+                <form id="wateringForm">
+                  <label for="wateringHour">Watering Hour:</label>
+                  <input type="number" id="wateringHour" name="wateringHour" min="0" max="23" required>
+                  <label for="wateringMinute">Watering Minute:</label>
+                  <input type="number" id="wateringMinute" name="wateringMinute" min="0" max="59" required>
+                  <label for="threshold">Threshold:</label>
+                  <input type="number" id="threshold" name="threshold" min="0" max="100" required>
+                  <input type="submit" value="Submit" onclick="submitForm()">
+                </form>
+                </div>
+            </p>
+    </section>
+
+    <!--SEction 3-->
+    <section class="img3">
+        <div class="text">
+            <span class="textBg">AIML prediction</span>
+        </div>
+    </section>
+    <section class="section3 section-dark">
+        <h2>
+            AIML Prediction
+        </h2>
+        <p>
+        <div class="predict">Prediction: </div>
+    <div id ="Prediction">
+    </div>
+</p>
+    </section>
+
+    <!--First section copy -->
+    <section class="img1">
+        <div class="text">
+            <span class="textBg">Agritechnoticinas</span>
+        </div>
+    </section>
+    
+<script>
+    setInterval(drawClock, 1000);
+    function drawClock(){
+        var now = new Date();
+        var hour = now.getHours();
+        var minute = now.getMinutes();
+        var second = now.getSeconds();
+        //Date
+        var options = {year: 'numeric', month: 'long', day: 'numeric' };
+          var today  = new Date();
+        document.getElementById("date").innerHTML = today.toLocaleDateString("en-US", options);
+        
+        //hour
+        var hourAngle = (360*(hour/12))+((360/12)*(minute/60));
+        var minAngle = 360*(minute/60);
+        document.getElementById("hour").style.transform = "rotate("+(hourAngle)+"deg)";
+        //minute
+        document.getElementById("min").style.transform = "rotate("+(minAngle)+"deg)";
+    
+        //Get Humidity Temperature and Rain Data
+        GetData();
+    }
+    function setDialReading(read){
+      var readingAngle = (180*read/100)-90;
+      document.getElementById("needle").style.transform = "rotate("+(readingAngle)+"deg)";
+    }
+    function GetData(){
+      var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+          var txt = this.responseText;
+          var obj = JSON.parse(txt); //Ref: https://www.w3schools.com/js/js_json_parse.asp
+            document.getElementById("SoilMoisture").innerHTML = Math.round(obj.SoilMoisture) + " %";
+            document.getElementById("MotorSpeed").innerHTML = Math.round(obj.PumpSpeedPercentage) + " %";
+            document.getElementById("WeeklyAverage").innerHTML = Math.round(obj.WeeklyAverage) + " %";
+            document.getElementById("WeeklyWaterAverage").innerHTML = Math.round(obj.WeeklyWaterAverage) + " ml";
+            document.getElementById("Prediction").innerHTML = obj.Prediction;
+            /*document.getElementById('wateringHour').innerHTML = obj.wateringHour;
+            document.getElementById('wateringMinute').innerHTML = obj.wateringMinute;
+            document.getElementById('threshold').innerHTML = obj.threshold;*/
+            var READ = Math.round(obj.SoilMoisture);
+            setDialReading(READ);
+          }
+        };
+     xhttp.open("GET", "SendData", true); //Handle readADC server on ESP8266
+     xhttp.send();
+    }
+    function submitForm() {
+      // Get the form values
+      const wateringHour = document.getElementById('wateringHour').value;
+      const wateringMinute = document.getElementById('wateringMinute').value;
+      const threshold = document.getElementById('threshold').value;
+      // Prepare the data to be sent
+      const data = {
+          wateringHour: wateringHour,
+          wateringMinute: wateringMinute,
+          threshold: threshold
+      };
+      // Create a new XMLHttpRequest object
+      const xhr = new XMLHttpRequest();
+      // Configure it: POST-request for the given URL / endpoint
+      xhr.open('POST','SetData', true);
+      xhr.setRequestHeader('Content-Type', 'text/plain');
+      // Setup a function to run when the request completes successfully
+      xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+              // Handle the response from the server if needed
+              console.log('Success:', xhr.responseText);
+          } else {
+              console.error('Request failed with status:', xhr.status, xhr.statusText);
+          }
+      };
+      // Handle network errors
+      xhr.onerror = function () {
+          console.error('Network request failed');
+      };
+      // Convert the data object to a JSON string and send the request
+      xhr.send(JSON.stringify(data));
+    }
+    </script>
+</body>
+</html>
